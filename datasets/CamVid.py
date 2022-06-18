@@ -60,6 +60,7 @@ class CamVid(Dataset):
         target = cv2.imread(pathY[idx])
         target = cv2.cvtColor(target, cv2.COLOR_BGR2RGB)
         if self.transform is not None:
-            img, target = self.transform(image=img, mask=target)
-        
+            aug = self.transform(image=img, mask=target)
+            img = aug['image']
+            target = aug['mask']
         return (transforms.ToTensor()(img).cuda(), transforms.ToTensor()(self.oneHot(target)).cuda())

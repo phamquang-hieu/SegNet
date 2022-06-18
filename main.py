@@ -14,18 +14,19 @@ from comet_ml import Experiment
 import json
 
 def main(args, logger):
-    transform = aug = A.Compose([
+    transform = A.Compose([
         A.OneOf([
             A.RandomSizedCrop(min_max_height=(50, 101), height=720, width=960, p=0.5),
             A.PadIfNeeded(min_height=720, min_width=960, p=0.5)
         ],p=1),
-        A.VerticalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),              
         A.RandomRotate90(p=0.5),
         A.OneOf([
-            A.ElasticTransform(p=0.5, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
-            A.GridDistortion(p=0.5),
-            A.OpticalDistortion(distort_limit=1, shift_limit=0.5, p=1),
-        ], p=0.8)])
+            A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5),
+            A.GridDistortion(p=0.5),                 
+            ], p=0.8)]
+        )
+
 
     random.seed(11)
         
