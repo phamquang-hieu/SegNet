@@ -8,9 +8,24 @@ import torch
 import torch.nn as nn
 # import torchvision.transforms as transforms
 import albumentations as A
+import random
 
 def main(args):
-    transform = None 
+    transform = aug = A.Compose([
+        A.OneOf([
+            A.RandomSizedCrop(min_max_height=(50, 101), height=original_height, width=original_width, p=0.5),
+            A.PadIfNeeded(min_height=original_height, min_width=original_width, p=0.5)
+        ],p=1),
+        A.VerticalFlip(p=0.5),
+        A.RandomRotate90(p=0.5),
+        A.OneOf([
+            A.ElasticTransform(p=0.5, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
+            A.GridDistortion(p=0.5),
+            A.OpticalDistortion(distort_limit=1, shift_limit=0.5, p=1),
+        ], p=0.8)])
+
+        random.seed(11)
+        
     train_loader = DataLoader(CamVid(mode='train', transform=transform), batch_size=args.batch_size, shuffle=True)
     valid_loader = DataLoader(CamVid(mode='valid', transform=transform), batch_size=args.batch_size, shuffle=True)
     test_loader = DataLoader(CamVid(mode='test', transform=transform), batch_size=args.batch_size, shuffle=True)
