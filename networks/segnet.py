@@ -106,7 +106,6 @@ class SegNet(nn.Module):
         sizes = []
     
         for stage in self.encoder_stages:
-            print("type of x", type(x))
             x = stage(x)
             sizes.append(x.size())
             x, index = self.pool(x)
