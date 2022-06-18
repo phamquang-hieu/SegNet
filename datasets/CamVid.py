@@ -8,7 +8,7 @@ import glob
 import cv2
 
 class CamVid(Dataset):
-    def __init__(self, img_dir="CamVid", mode='train', transform=None):
+    def __init__(self, img_dir="./datasets/CamVid", mode='train', transform=None):
         self.mode = mode
         self.transform = transform
         

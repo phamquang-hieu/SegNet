@@ -1,4 +1,5 @@
 
+
 from trainers.Trainer import Trainer
 from networks.segnet import SegNet
 from datasets.CamVid import CamVid
@@ -9,15 +10,14 @@ import torch.nn as nn
 # import torchvision.transforms as transforms
 import albumentations as A
 import random
-import comet 
 from comet_ml import Experiment
 import json
 
 def main(args, logger):
     transform = aug = A.Compose([
         A.OneOf([
-            A.RandomSizedCrop(min_max_height=(50, 101), height=original_height, width=original_width, p=0.5),
-            A.PadIfNeeded(min_height=original_height, min_width=original_width, p=0.5)
+            A.RandomSizedCrop(min_max_height=(50, 101), height=720, width=960, p=0.5),
+            A.PadIfNeeded(min_height=720, min_width=960, p=0.5)
         ],p=1),
         A.VerticalFlip(p=0.5),
         A.RandomRotate90(p=0.5),
@@ -27,7 +27,7 @@ def main(args, logger):
             A.OpticalDistortion(distort_limit=1, shift_limit=0.5, p=1),
         ], p=0.8)])
 
-        random.seed(11)
+    random.seed(11)
         
     train_loader = DataLoader(CamVid(mode='train', transform=transform), batch_size=args.batch_size, shuffle=True)
     valid_loader = DataLoader(CamVid(mode='valid', transform=transform), batch_size=args.batch_size, shuffle=True)
