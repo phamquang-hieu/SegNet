@@ -1,9 +1,11 @@
 import torch
 from torchvision.utils import make_grid
 from torchvision import transforms
+import json
+from comet_ml import ExistingExperiment
 
 class Trainer():
-    def __init__(self, model, optimizer, lr_scheduler, loss, args, resume:str, train_loader, valid_loader):
+    def __init__(self, model, optimizer, lr_scheduler, loss, args, resume:str, train_loader, valid_loader, logger=None):
         self.model = model
         self.loss = loss
         self.train_loader = train_loader
@@ -11,15 +13,20 @@ class Trainer():
         self.optimzer = optimizer
         self.args = args
         self.lr_scheduler = lr_scheduler
-        
+        self.logger = logger
         self.start_epoch = 1
         
         if resume:
             self._resume_checkpoint(resume)
+            with open("/content/drive/MyDrive/ComputerVision/{}.json".format(args.name)) as f:
+                EXPERIMENT_KEY = json.load(f)
+            self.logger = ExistingExperiment(api_key="zZTzevPBE5M14bjosVgWeyg3u",
+                                                            previous_experiment=EXPERIMENT_KEY)
+                
         
     def _train_epoch(self, epoch):
         self.model.train()
-        
+        train_length = len(self.train_loader)
         for i, (image, target) in enumerate(self.train_loader):
             output = self.model(image)
             
@@ -28,7 +35,8 @@ class Trainer():
             loss.backward()
             self.optimizer.step()
             
-            print(f'[Epoch {epoch}/{self.args.num_epoch}] [Batch {i/len(self.train_loader)}] {loss}')
+            self.logger.log_metric("training-loss", loss, epoch=epoch, step=(epoch-1)*train_length+i+1)
+            print(f'[Epoch {epoch}/{self.args.num_epoch}] [Batch {(i+1)/len(self.train_loader)}] {loss}')
             
     def _valid_epoch(self, epoch):
         self.model.eval()
@@ -44,8 +52,12 @@ class Trainer():
             
         class_IoU /= valid_len
         epoch_mIoU /= vaid_len
-        
-        return epoch_mIoU.cpu().numpy(), class_IoU.cpu().numpy() 
+        class_IoU = class_IoU.cpu().numpy()
+        epoch_mIoU = epoch_mIoU.cpu().numpy()
+        self.logger.log_metric("mIoU", epoch_mIoU, step=epoch)
+        self.logger.log_metric("classIoU", class_IoU, step=epoch)
+
+        return epoch_mIoU, class_IoU
         
     def train(self):
         print("---start-training--")

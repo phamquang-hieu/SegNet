@@ -9,8 +9,11 @@ import torch.nn as nn
 # import torchvision.transforms as transforms
 import albumentations as A
 import random
+import comet 
+from comet_ml import Experiment
+import json
 
-def main(args):
+def main(args, logger):
     transform = aug = A.Compose([
         A.OneOf([
             A.RandomSizedCrop(min_max_height=(50, 101), height=original_height, width=original_width, p=0.5),
@@ -44,14 +47,16 @@ def main(args):
                       args = args,
                       resume=args.resume,
                       train_loader=train_loader,
-                      valid_loader=valid_loader
+                      valid_loader=valid_loader, 
+                      logger=logger
                     )
     print("stay-tuned")
     trainer.train()
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', "--resume", default="")
+    parser.add_argument('-r', "--resume", default="", help='path to the directory to restore ')
+    parser.add_argument('-name', "--name", type=str, default="segnet")
     parser.add_argument('-n', "--num_epoch", type=int, default=120, help='number of epoch')
     parser.add_argument('-bs', "--batch_size", type=int, default=4, help='batch size')
     parser.add_argument('-lr', "--learning_rate", type=float, default=1e-3, help='learning rate')
@@ -60,4 +65,13 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    main(args)
+    # Create an experiment with your api key
+    logger = Experiment(
+        api_key="zZTzevPBE5M14bjosVgWeyg3u",
+        project_name="semanticsegmentation",
+        workspace="phamquang-hieu",
+    )
+    logger.set_name(args.name)
+    with open("/content/drive/MyDrive/ComputerVision/{}.json".format(args.name), "w") as f:
+        json.dump(logger.get_key(), f)
+    main(args, logger)
