@@ -51,7 +51,7 @@ class Trainer():
             valid_len += image.shape[0]
             
         class_IoU /= valid_len
-        epoch_mIoU /= vaid_len
+        epoch_mIoU /= valid_len
         class_IoU = class_IoU.cpu().numpy()
         epoch_mIoU = epoch_mIoU.cpu().numpy()
         self.logger.log_metric("mIoU", epoch_mIoU, step=epoch)

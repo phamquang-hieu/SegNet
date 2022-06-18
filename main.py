@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 # import torchvision.transforms as transforms
 import albumentations as A
+from albumentations.augmentations.geometric.resize import Resize
 import random
 from comet_ml import Experiment
 import json
@@ -25,10 +26,8 @@ def main(args, logger):
             A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5),
             A.GridDistortion(p=0.5),                 
             ], p=0.8)]
+        Resize(height=720, width=960)
         )
-
-
-    random.seed(11)
         
     train_loader = DataLoader(CamVid(mode='train', transform=transform), batch_size=args.batch_size, shuffle=True)
     valid_loader = DataLoader(CamVid(mode='valid', transform=transform), batch_size=args.batch_size, shuffle=True)
