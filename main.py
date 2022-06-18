@@ -1,5 +1,6 @@
 
 
+
 from trainers.Trainer import Trainer
 from networks.segnet import SegNet
 from datasets.CamVid import CamVid
@@ -17,7 +18,7 @@ import json
 def main(args, logger):
     transform = A.Compose([
         A.OneOf([
-            A.RandomSizedCrop(min_max_height=(50, 101), height=720, width=960, p=0.5),
+            A.RandomSizedCrop(min_max_height=(576, 768), height=720, width=960, p=0.5),
             A.PadIfNeeded(min_height=720, min_width=960, p=0.5)
         ],p=1),
         A.VerticalFlip(p=0.5),              
@@ -26,7 +27,7 @@ def main(args, logger):
             A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5),
             A.GridDistortion(p=0.5),                 
             ], p=0.8),
-        Resize(height=720, width=960)]
+        Resize(height=720/2, width=960/2)]
         )
         
     train_loader = DataLoader(CamVid(mode='train', transform=transform), batch_size=args.batch_size, shuffle=True)
@@ -61,8 +62,8 @@ if __name__ == '__main__':
     parser.add_argument('-bs', "--batch_size", type=int, default=4, help='batch size')
     parser.add_argument('-lr', "--learning_rate", type=float, default=1e-3, help='learning rate')
     parser.add_argument('-mmt', "--momentum", type=float, default=0.9, help='momentum')
-    parser.add_argument('-n_c', "--num_classes", type=int, default=12, help='number of classes in the segmentation problem')
-    
+    parser.add_argument('-n_c', "--num_classes", type=int, default=11, help='number of classes in the segmentation problem')
+    parser.add_argument('-eval', "--eval_freq", type=int, default=1, help='frequency of evaluation (epoch)')
     args = parser.parse_args()
     
     # Create an experiment with your api key
