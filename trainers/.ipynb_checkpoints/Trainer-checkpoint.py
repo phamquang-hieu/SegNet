@@ -36,18 +36,17 @@ class Trainer():
             self.optimizer.step()
             
             self.logger.log_metric("training-loss", loss, epoch=epoch, step=(epoch-1)*train_length+i+1)
-            print(f'[Epoch {epoch}/{self.args.num_epoch}] [Batch {(i+1)}/{len(self.train_loader)}] {loss}')
+            print(f'[Epoch {epoch}/{self.args.num_epoch}] [Batch {(i+1)/len(self.train_loader)}] {loss}')
             
     def _valid_epoch(self, epoch):
         self.model.eval()
         class_IoU = torch.cuda.FloatTensor(0) # it will soon be a 1D tensor after addition
         valid_len = 0
-        epoch_mIoU = 0
         for i, (image, target) in enumerate(self.valid_loader):
             output_valid = self.model(image)
             
-            metrics = self._eval_metrics(output_valid, target)
-            epoch_mIoU += metrics[0]
+            metrics = self._eval_metrics(ouput_valid, target)
+            epoch_mIou += metrics[0]
             class_IoU += metrics[1]
             valid_len += image.shape[0]
             
