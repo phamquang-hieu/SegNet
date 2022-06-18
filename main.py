@@ -1,6 +1,3 @@
-
-
-
 from trainers.Trainer import Trainer
 from networks.segnet import SegNet
 from datasets.CamVid import CamVid
@@ -16,9 +13,9 @@ from comet_ml import Experiment
 import json
 
 def main(args, logger):
-    transform = A.Compose([
+    transform_train = A.Compose([
         A.OneOf([
-            A.RandomSizedCrop(min_max_height=(576, 768), height=720, width=960, p=0.5),
+            A.RandomCrop(height=576, width=768, p=0.5),
             A.PadIfNeeded(min_height=720, min_width=960, p=0.5)
         ],p=1),
         A.VerticalFlip(p=0.5),              
@@ -27,12 +24,15 @@ def main(args, logger):
             A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5),
             A.GridDistortion(p=0.5),                 
             ], p=0.8),
-        Resize(height=720/2, width=960/2)]
+        Resize(height=360, width=480)]
         )
-        
-    train_loader = DataLoader(CamVid(mode='train', transform=transform), batch_size=args.batch_size, shuffle=True)
-    valid_loader = DataLoader(CamVid(mode='valid', transform=transform), batch_size=args.batch_size, shuffle=True)
-    test_loader = DataLoader(CamVid(mode='test', transform=transform), batch_size=args.batch_size, shuffle=True)
+    transform_test = A.Compose([
+        Resize(height=360, width=480)
+    ])
+    # transform = None
+    train_loader = DataLoader(CamVid(mode='train', transform=transform_train), batch_size=args.batch_size, shuffle=True)
+    valid_loader = DataLoader(CamVid(mode='valid', transform=transform_test), batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(CamVid(mode='test', transform=transform_test), batch_size=args.batch_size, shuffle=False)
     
     model = SegNet(args.num_classes)
     optimizer = torch.optim.SGD(params=model.parameters(), lr=args.learning_rate, momentum=args.momentum)

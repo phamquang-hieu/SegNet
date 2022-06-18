@@ -3,6 +3,7 @@ from torchvision.utils import make_grid
 from torchvision import transforms
 import json
 from comet_ml import ExistingExperiment
+import os
 
 class Trainer():
     def __init__(self, model, optimizer, lr_scheduler, loss, args, resume:str, train_loader, valid_loader, logger=None):
@@ -15,14 +16,13 @@ class Trainer():
         self.lr_scheduler = lr_scheduler
         self.logger = logger
         self.start_epoch = 1
-        
+        self.best_mIoU = -1
         if resume:
             self._resume_checkpoint(resume)
             with open("/content/drive/MyDrive/ComputerVision/{}.json".format(args.name)) as f:
                 EXPERIMENT_KEY = json.load(f)
             self.logger = ExistingExperiment(api_key="zZTzevPBE5M14bjosVgWeyg3u",
                                                             previous_experiment=EXPERIMENT_KEY)
-                
         
     def _train_epoch(self, epoch):
         self.model.train()
@@ -40,13 +40,14 @@ class Trainer():
             
     def _valid_epoch(self, epoch):
         self.model.eval()
-        class_IoU = torch.cuda.FloatTensor(0) # it will soon be a 1D tensor after addition
+        class_IoU = torch.cuda.FloatTensor([0]*self.args.num_classes) # it will soon be a 1D tensor after addition
         valid_len = 0
         epoch_mIoU = 0
         for i, (image, target) in enumerate(self.valid_loader):
             output_valid = self.model(image)
             
             metrics = self._eval_metrics(output_valid, target)
+            print(metrics[0], metrics[1].shape)
             epoch_mIoU += metrics[0]
             class_IoU += metrics[1]
             valid_len += image.shape[0]
@@ -56,7 +57,8 @@ class Trainer():
         class_IoU = class_IoU.cpu().numpy()
         epoch_mIoU = epoch_mIoU.cpu().numpy()
         self.logger.log_metric("mIoU", epoch_mIoU, step=epoch)
-        self.logger.log_metric("classIoU", class_IoU, step=epoch)
+        for idx, c in enumerate(class_IoU):
+            self.logger.log_metric(f"class-{idx}-IoU", c, step=epoch)
 
         return epoch_mIoU, class_IoU
         
@@ -66,12 +68,12 @@ class Trainer():
             self._train_epoch(epoch)
             
             if (epoch % self.args.eval_freq == 0):
-                best_mIoU = -1
                 mIoU, cIoU = self._valid_epoch(epoch)
                 
-                if mIoU > best_mIoU:
+                if mIoU > self.best_mIoU:
                     self.best_mIoU = mIoU
                     self.best_cIoU = cIoU
+                    print("best cIoU", self.best_cIoU)
                     self._save_checkpoint(epoch, save_best=True)
                 else:
                     self._save_checkpoint(epoch, save_best=False)
@@ -94,6 +96,7 @@ class Trainer():
         pass
     
     def _save_checkpoint(self, epoch, save_best=False):
+        model_dir = "./checkpoints"
         state = {
             'epoch': epoch, 
             'model': self.model.state_dict(),
@@ -102,12 +105,12 @@ class Trainer():
             'best_IoU': self.best_mIoU,
             'best_cIoU':self.best_cIoU
         }
-        
+        os.makedirs(model_dir, exist_ok=True)
         if save_best:
-            save_path = f"./checkpoints/checkpoint-best.pth"
+            save_path = f"{model_dir}/checkpoint-best.pth"
         else:
-            save_path = f"./checkpoints/checkpoint.pth"
-        torch.save(save_path)
+            save_path = f"{model_dir}/checkpoint.pth"
+        torch.save(state, save_path)
         
     def _resume_checkpoint(self, resume_path):
         state = torch.load(resume_path)
