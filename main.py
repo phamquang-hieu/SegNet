@@ -57,6 +57,7 @@ def main(args, logger):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', "--resume", default="", help='path to the directory to restore ')
+    parser.add_argument('-dr', "--drive_mounted", default=True, help="whether or not connected to google drive")
     parser.add_argument('-name', "--name", type=str, default="segnet")
     parser.add_argument('-n', "--num_epoch", type=int, default=120, help='number of epoch')
     parser.add_argument('-bs', "--batch_size", type=int, default=4, help='batch size')

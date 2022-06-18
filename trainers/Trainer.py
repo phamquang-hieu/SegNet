@@ -65,7 +65,6 @@ class Trainer():
     def train(self):
         print("---start-training--")
         for epoch in range(self.start_epoch, self.args.num_epoch+1):
-            self._train_epoch(epoch)
             
             if (epoch % self.args.eval_freq == 0):
                 mIoU, cIoU = self._valid_epoch(epoch)
@@ -77,6 +76,7 @@ class Trainer():
                     self._save_checkpoint(epoch, save_best=True)
                 else:
                     self._save_checkpoint(epoch, save_best=False)
+            self._train_epoch(epoch)
             
             self.lr_scheduler.step()
     
@@ -95,8 +95,11 @@ class Trainer():
     def infer(self):
         pass
     
+    def drive_path(self, path):
+        return os.path.join("content/drive/MyDrive/ComputerVision", path)
+
     def _save_checkpoint(self, epoch, save_best=False):
-        model_dir = "./checkpoints"
+        model_dir = "checkpoints"
         state = {
             'epoch': epoch, 
             'model': self.model.state_dict(),
@@ -105,11 +108,14 @@ class Trainer():
             'best_IoU': self.best_mIoU,
             'best_cIoU':self.best_cIoU
         }
-        os.makedirs(model_dir, exist_ok=True)
         if save_best:
             save_path = f"{model_dir}/checkpoint-best.pth"
         else:
             save_path = f"{model_dir}/checkpoint.pth"
+        if self.args.drive_mounted:
+            save_path = self.drive_path(save_path)
+            model_dir = self.drive_path(model_dir)
+        os.makedirs(model_dir, exist_ok=True)
         torch.save(state, save_path)
         
     def _resume_checkpoint(self, resume_path):
