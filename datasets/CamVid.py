@@ -34,7 +34,7 @@ class CamVid(Dataset):
         for i, label in enumerate(self.label_dict.keys()):  
             channel = np.array((target == np.array([[self.label_dict[label]]])), dtype=np.float32)
             channel = np.logical_and(np.logical_and(channel[:, :, 0], channel[:, :, 1]), channel[:, :, 2])
-            output[i, :, :] = channel
+            output[:, :, i] = channel
         return output
 
     def __len__(self):
