@@ -25,8 +25,8 @@ def main(args, logger):
         A.OneOf([
             A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5),
             A.GridDistortion(p=0.5),                 
-            ], p=0.8)]
-        Resize(height=720, width=960)
+            ], p=0.8),
+        Resize(height=720, width=960)]
         )
         
     train_loader = DataLoader(CamVid(mode='train', transform=transform), batch_size=args.batch_size, shuffle=True)
