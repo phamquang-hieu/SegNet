@@ -29,7 +29,7 @@ class CamVid(Dataset):
             self.label_dict[x] = rgb
 
     def oneHot(self, target):
-        output_shape = (len(self.label_dict.keys()), target.shape[0], target.shape[1])
+        output_shape = (target.shape[0], target.shape[1], len(self.label_dict.keys()))
         output = np.zeros(output_shape)
         for i, label in enumerate(self.label_dict.keys()):  
             channel = np.array((target == np.array([[self.label_dict[label]]])), dtype=np.float32)
