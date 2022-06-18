@@ -61,7 +61,7 @@ if __name__ == '__main__':
     parser.add_argument('-bs', "--batch_size", type=int, default=4, help='batch size')
     parser.add_argument('-lr', "--learning_rate", type=float, default=1e-3, help='learning rate')
     parser.add_argument('-mmt', "--momentum", type=float, default=0.9, help='momentum')
-    parser.add_argument('-n_c', "--num_classes", type=int, default=11, help='number of classes in the segmentation problem')
+    parser.add_argument('-n_c', "--num_classes", type=int, default=12, help='number of classes in the segmentation problem')
     
     args = parser.parse_args()
     

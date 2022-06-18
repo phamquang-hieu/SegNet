@@ -10,7 +10,7 @@ class Trainer():
         self.loss = loss
         self.train_loader = train_loader
         self.valid_loader = valid_loader
-        self.optimzer = optimizer
+        self.optimizer = optimizer
         self.args = args
         self.lr_scheduler = lr_scheduler
         self.logger = logger
