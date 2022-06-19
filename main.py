@@ -37,7 +37,7 @@ def main(args, logger):
     model = SegNet(args.num_classes)
     optimizer = torch.optim.SGD(params=model.parameters(), lr=args.learning_rate, momentum=args.momentum)
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
-    loss = nn.BCEWithLogitsLoss() 
+    loss = nn.CrossEntropyLoss() 
     
     model.cuda()
     

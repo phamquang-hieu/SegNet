@@ -28,15 +28,15 @@ class CamVid(Dataset):
             rgb = [rows[1]['r'],rows[1]['g'],rows[1]['b']]
             self.label_dict[x] = rgb
 
-    def oneHot(self, target):
-        output_shape = (target.shape[0], target.shape[1], len(self.label_dict.keys()))
+    def _classEncode(self, target):
+        output_shape = (target.shape[0], target.shape[1])
         output = np.zeros(output_shape)
-        for i, label in enumerate(self.label_dict.keys()):  
+        for label in self.label_dict.keys():  
             channel = np.array((target == np.array([[self.label_dict[label]]])), dtype=np.float32)
-            channel = np.logical_and(np.logical_and(channel[:, :, 0], channel[:, :, 1]), channel[:, :, 2])
-            output[:, :, i] = channel
+            channel = np.logical_and(np.logical_and(channel[:, :, 0], channel[:, :, 1]), channel[:, :, 2])*label
+            output += channel
         return output
-
+    
     def __len__(self):
         if self.mode=='train':
             return len(self.train_raw)
@@ -63,4 +63,4 @@ class CamVid(Dataset):
             aug = self.transform(image=img, mask=target)
             img = aug['image']
             target = aug['mask']
-        return (transforms.ToTensor()(img).cuda(), transforms.ToTensor()(self.oneHot(target)).cuda())
+        return (transforms.ToTensor()(img).cuda(), transforms.ToTensor()(self._classEncode(target)).cuda())
