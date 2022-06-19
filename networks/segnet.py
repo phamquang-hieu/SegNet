@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 from copy import deepcopy
+from torch.nn.utils import spectral_norm
+
 class SegNet(nn.Module):
     def __init__(self, num_classes, in_channels=3, pretrained=True):
         super(SegNet, self).__init__()
@@ -77,10 +79,10 @@ class SegNet(nn.Module):
         while i < len(encoder):  
             if isinstance(encoder[i], nn.Conv2d) and encoder[i].in_channels < encoder[i].out_channels:
                 if i == 0:
-                    decoder_conv = nn.Conv2d(encoder[i].out_channels, num_classes, kernel_size=encoder[i].kernel_size, padding=encoder[i].padding)
+                    decoder_conv = spectral_norm(nn.Conv2d(encoder[i].out_channels, num_classes, kernel_size=encoder[i].kernel_size, padding=encoder[i].padding))
                     decoder_bn = nn.BatchNorm2d(num_classes)
                 else:    
-                    decoder_conv = nn.Conv2d(encoder[i].out_channels, encoder[i].in_channels, kernel_size=encoder[i].kernel_size, padding=encoder[i].padding)
+                    decoder_conv = spectral_norm(nn.Conv2d(encoder[i].out_channels, encoder[i].in_channels, kernel_size=encoder[i].kernel_size, padding=encoder[i].padding))
                     decoder_bn = nn.BatchNorm2d(encoder[i].in_channels)
             else: 
                 decoder_conv = deepcopy(encoder[i])

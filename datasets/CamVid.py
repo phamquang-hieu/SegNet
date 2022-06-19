@@ -63,4 +63,5 @@ class CamVid(Dataset):
             aug = self.transform(image=img, mask=target)
             img = aug['image']
             target = aug['mask']
-        return (transforms.ToTensor()(img).cuda(), transforms.ToTensor()(self._classEncode(target)).squeeze().cuda())
+        return (transforms.ToTensor()(img).cuda(), torch.cuda.LongTensor(self._classEncode(target)).squeeze())
+
