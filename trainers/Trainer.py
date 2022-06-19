@@ -40,22 +40,22 @@ class Trainer():
             
     def _valid_epoch(self, epoch):
         self.model.eval()
-        class_IoU = torch.cuda.FloatTensor([0]*self.args.num_classes) # it will soon be a 1D tensor after addition
+        # class_IoU = torch.cuda.FloatTensor([0]*self.args.num_classes) # it will soon be a 1D tensor after addition
+        class_IoU = 0
         valid_len = 0
         epoch_mIoU = 0
         for i, (image, target) in enumerate(self.valid_loader):
             output_valid = self.model(image)
             
-            metrics = self._eval_metrics(output_valid, target)
-            print(metrics[0], metrics[1].shape)
-            epoch_mIoU += metrics[0]
-            class_IoU += metrics[1]
+            batch_sum_mIoU, batch_class_IoU = self._eval_metrics(output_valid, target)
+            class_IoU += batch_class_IoU
+            epoch_mIoU += batch_sum_IoU
+            
             valid_len += image.shape[0]
             
         class_IoU /= valid_len
         epoch_mIoU /= valid_len
-        class_IoU = class_IoU.cpu().numpy()
-        epoch_mIoU = epoch_mIoU.cpu().numpy()
+    
         self.logger.log_metric("mIoU", epoch_mIoU, step=epoch)
         for idx, c in enumerate(class_IoU):
             self.logger.log_metric(f"class-{idx}-IoU", c, step=epoch)
@@ -67,11 +67,11 @@ class Trainer():
         for epoch in range(self.start_epoch, self.args.num_epoch+1):
             
             if (epoch % self.args.eval_freq == 0):
-                mIoU, cIoU = self._valid_epoch(epoch)
+                mIoU = self._valid_epoch(epoch)
                 
                 if mIoU > self.best_mIoU:
                     self.best_mIoU = mIoU
-                    self.best_cIoU = cIoU
+                    self.best_cIoU =  None #cIoU
                     print("best cIoU", self.best_cIoU)
                     self._save_checkpoint(epoch, save_best=True)
                 else:
@@ -82,15 +82,21 @@ class Trainer():
     
     def _eval_metrics(self, output:torch.cuda.FloatTensor, target:torch.cuda.FloatTensor):
         # return a dictionary with keys being name of corresponding metrics.
-        assert len(output.shape) == len(target.shape) == 4, "_eval_metrics expect input of size 4"
-        
-        intersection = output.logical_and(target).sum(dim=(2,3), dtype=torch.float16).mean(dim=0)
-        union = output.logical_or(target).sum(dim=(2,3), dtype=torch.float16).mean(dim=0)
-        IoU = (intersection/union) # of type Tensor
-        
-        mIoU = IoU.mean()
-        
-        return mIoU, IoU
+        output = output.argmax(dim=1)
+        assert len(output.shape) == len(target.shape) == 3, "_eval_metrics expect input of size 3"
+        class_IoU = []
+        for label in range(self.args.num_classes):
+            output_label = (output==label).long()
+            target_label = (target==label).long()
+            
+            label_intersection = output_label.logical_and(target_label).sum(dim=(1, 2))
+            label_union = output_label.logical_or(target_label).sum(dim=(1, 2))
+            
+            class_IoU.append(((label_intersection)/(label_union)).item())   
+        class_IoU = np.array(class_IoU)
+        batch_sum_mIoU = class_IoU.mean(axis=0).sum() # mean along the label dimension
+        class_IoU = class_IoU.sum(axis=1)
+        return batch_sum_mIoU, class_IoU    
     
     def infer(self):
         pass
