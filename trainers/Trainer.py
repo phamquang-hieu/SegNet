@@ -4,6 +4,7 @@ from torchvision import transforms
 import json
 from comet_ml import ExistingExperiment
 import os
+import numpy as np
 
 class Trainer():
     def __init__(self, model, optimizer, lr_scheduler, loss, args, resume:str, train_loader, valid_loader, logger=None):
@@ -47,15 +48,13 @@ class Trainer():
         for i, (image, target) in enumerate(self.valid_loader):
             output_valid = self.model(image)
             
-            batch_sum_mIoU, batch_class_IoU = self._eval_metrics(output_valid, target)
+            batch_class_IoU = self._eval_metrics(output_valid, target)
             class_IoU += batch_class_IoU
-            epoch_mIoU += batch_sum_IoU
-            
             valid_len += image.shape[0]
             
         class_IoU /= valid_len
-        epoch_mIoU /= valid_len
-    
+        epoch_mIoU = class_IoU.mean()
+        print("epoch_mIoU", epoch_mIoU, epoch_mIoU.shape)
         self.logger.log_metric("mIoU", epoch_mIoU, step=epoch)
         for idx, c in enumerate(class_IoU):
             self.logger.log_metric(f"class-{idx}-IoU", c, step=epoch)
@@ -67,11 +66,11 @@ class Trainer():
         for epoch in range(self.start_epoch, self.args.num_epoch+1):
             
             if (epoch % self.args.eval_freq == 0):
-                mIoU = self._valid_epoch(epoch)
+                mIoU, c_IoU = self._valid_epoch(epoch)
                 
                 if mIoU > self.best_mIoU:
                     self.best_mIoU = mIoU
-                    self.best_cIoU =  None #cIoU
+                    self.best_cIoU =  c_IoU
                     print("best cIoU", self.best_cIoU)
                     self._save_checkpoint(epoch, save_best=True)
                 else:
@@ -92,11 +91,11 @@ class Trainer():
             label_intersection = output_label.logical_and(target_label).sum(dim=(1, 2))
             label_union = output_label.logical_or(target_label).sum(dim=(1, 2))
             
-            class_IoU.append(((label_intersection)/(label_union)).item())   
+            class_IoU.append(((label_intersection)/(label_union)).cpu().numpy())   
         class_IoU = np.array(class_IoU)
-        batch_sum_mIoU = class_IoU.mean(axis=0).sum() # mean along the label dimension
+        # batch_sum_mIoU = class_IoU.mean(axis=0).sum() # mean along the label dimension
         class_IoU = class_IoU.sum(axis=1)
-        return batch_sum_mIoU, class_IoU    
+        return class_IoU    
     
     def infer(self):
         pass
@@ -132,3 +131,4 @@ class Trainer():
         self.lr_scheduler.load_state_dict(state['lr_scheduler'])
         self.best_IoU = state['best_IoU']
         self.best_cIoU = state['best_cIoU']
+
