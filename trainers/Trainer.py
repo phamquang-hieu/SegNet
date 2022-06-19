@@ -89,7 +89,7 @@ class Trainer():
             target_label = (target==label).long()
             
             label_intersection = output_label.logical_and(target_label).sum(dim=(1, 2))
-            label_union = output_label.logical_or(target_label).sum(dim=(1, 2))
+            label_union = output_label.logical_or(target_label).sum(dim=(1, 2)) + 1e-5 # this is for preventing Nan values
             
             class_IoU.append(((label_intersection)/(label_union)).cpu().numpy())   
         class_IoU = np.array(class_IoU)
