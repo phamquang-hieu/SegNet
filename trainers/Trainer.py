@@ -48,10 +48,10 @@ class Trainer():
         for i, (image, target) in enumerate(self.valid_loader):
             output_valid = self.model(image)
             
-            batch_class_IoU = self._eval_metrics(output_valid, target)
+            batch_class_IoU, num_samples_per_class = self._eval_metrics(output_valid, target)
             class_IoU += batch_class_IoU
-            valid_len += image.shape[0]
-            
+            valid_len += num_samples_per_class
+        print("num_instances_per_class", valid_len)
         class_IoU /= valid_len
         epoch_mIoU = class_IoU.mean()
         print("epoch_mIoU", epoch_mIoU, epoch_mIoU.shape)
@@ -84,18 +84,27 @@ class Trainer():
         output = output.argmax(dim=1)
         assert len(output.shape) == len(target.shape) == 3, "_eval_metrics expect input of size 3"
         class_IoU = []
+        num_samples_per_class = []
         for label in range(self.args.num_classes):
             output_label = (output==label).long()
             target_label = (target==label).long()
             
             label_intersection = output_label.logical_and(target_label).sum(dim=(1, 2))
-            label_union = output_label.logical_or(target_label).sum(dim=(1, 2)) + 1e-5 # this is for preventing Nan values
-            
-            class_IoU.append(((label_intersection)/(label_union)).cpu().numpy())   
+            label_union = output_label.logical_or(target_label).sum(dim=(1, 2))
+            print("---------------------------")
+            print("label_union", label_union)
+            print("label_union==0", label_union==0)
+            print("label_union!=0", label_union!=0)
+            print("label_union!=0.sum()", (label_union!=0).sum())
+            print("---------------------------")
+            num_samples_per_class.append((label_union != 0).sum().cpu().numpy())
+
+            class_IoU.append(((label_intersection)/(label_union+1e-5)).cpu().numpy())   
         class_IoU = np.array(class_IoU)
+        num_samples_per_class = np.array(num_samples_per_class)
         # batch_sum_mIoU = class_IoU.mean(axis=0).sum() # mean along the label dimension
         class_IoU = class_IoU.sum(axis=1)
-        return class_IoU    
+        return class_IoU, num_samples_per_class    
     
     def infer(self):
         pass
@@ -127,7 +136,7 @@ class Trainer():
         state = torch.load(resume_path)
         self.start_epoch = state['epoch']
         self.model.load_state_dict(state['model'])
-        self.optimizer.load_state_dict(state['optimizer'])
+        self.optimizer.load_state_dict(state['optimzer'])
         self.lr_scheduler.load_state_dict(state['lr_scheduler'])
         self.best_IoU = state['best_IoU']
         self.best_cIoU = state['best_cIoU']
