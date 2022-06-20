@@ -37,7 +37,7 @@ def main(args, logger):
     model = SegNet(args.num_classes)
     optimizer = torch.optim.SGD(params=model.parameters(), lr=args.learning_rate, momentum=args.momentum)
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
-    loss = nn.CrossEntropyLoss() 
+    loss = nn.CrossEntropyLoss(reduction='none') 
     
     model.cuda()
     
@@ -65,6 +65,8 @@ if __name__ == '__main__':
     parser.add_argument('-mmt', "--momentum", type=float, default=0.9, help='momentum')
     parser.add_argument('-n_c', "--num_classes", type=int, default=11, help='number of classes in the segmentation problem')
     parser.add_argument('-eval', "--eval_freq", type=int, default=1, help='frequency of evaluation (epoch)')
+    parser.add_argument('-a', '--a_focal', type=float, default=0.25, help="alpha in focal loss")
+    parser.add_argument('-gm', '--gamma', type=float, default=2, help='eponential part of focal loss')
     args = parser.parse_args()
     
     # Create an experiment with your api key

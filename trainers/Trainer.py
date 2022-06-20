@@ -20,7 +20,7 @@ class Trainer():
         self.best_mIoU = -1
         if resume:
             self._resume_checkpoint(resume)
-            with open("/content/drive/MyDrive/ComputerVision/{}.json".format(args.name)) as f:
+            with open("../../content/drive/MyDrive/ComputerVision/{}.json".format(args.name)) as f:
                 EXPERIMENT_KEY = json.load(f)
             self.logger = ExistingExperiment(api_key="zZTzevPBE5M14bjosVgWeyg3u",
                                                             previous_experiment=EXPERIMENT_KEY)
@@ -32,6 +32,9 @@ class Trainer():
             output = self.model(image)
             
             loss = self.loss(output, target)  # CELoss
+            probs = torch.exp(-loss)
+            loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
+            loss = loss.mean()
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -91,12 +94,12 @@ class Trainer():
             
             label_intersection = output_label.logical_and(target_label).sum(dim=(1, 2))
             label_union = output_label.logical_or(target_label).sum(dim=(1, 2))
-            print("---------------------------")
-            print("label_union", label_union)
-            print("label_union==0", label_union==0)
-            print("label_union!=0", label_union!=0)
-            print("label_union!=0.sum()", (label_union!=0).sum())
-            print("---------------------------")
+            # print("---------------------------")
+            # print("label_union", label_union)
+            # print("label_union==0", label_union==0)
+            # print("label_union!=0", label_union!=0)
+            # print("label_union!=0.sum()", (label_union!=0).sum())
+            # print("---------------------------")
             num_samples_per_class.append((label_union != 0).sum().cpu().numpy())
 
             class_IoU.append(((label_intersection)/(label_union+1e-5)).cpu().numpy())   
@@ -110,7 +113,7 @@ class Trainer():
         pass
     
     def drive_path(self, path):
-        return os.path.join("content/drive/MyDrive/ComputerVision", path)
+        return os.path.join("../../content/drive/MyDrive/ComputerVision", path)
 
     def _save_checkpoint(self, epoch, save_best=False):
         model_dir = "checkpoints"
