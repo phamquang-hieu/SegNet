@@ -13,14 +13,14 @@ class CamVid(Dataset):
         self.transform = transform
         
         if mode=="train":
-            self.train_raw = glob.glob(os.path.join(img_dir, "train", "*"))
-            self.train_labels = glob.glob(os.path.join(img_dir, "train_labels", "*"))
+            self.train_raw = glob.glob(os.path.join(img_dir, "train", "*.png"))
+            self.train_labels = glob.glob(os.path.join(img_dir, "train_labels", "*.png"))
         elif mode=="test":
             self.test_raw = glob.glob(os.path.join(img_dir, "test", "*"))
-            self.test_labels = glob.glob(os.path.join(img_dir, "test_labels", "*"))
+            self.test_labels = glob.glob(os.path.join(img_dir, "test_labels", "*.png"))
         elif mode=="valid":
             self.valid_raw = glob.glob(os.path.join(img_dir, "val", "*"))
-            self.valid_labels = glob.glob(os.path.join(img_dir, "val_labels", "*"))
+            self.valid_labels = glob.glob(os.path.join(img_dir, "val_labels", "*.png"))
         
         df = pd.read_csv(os.path.join(img_dir, "class_dict11.csv"))
         self.label_dict = dict()
