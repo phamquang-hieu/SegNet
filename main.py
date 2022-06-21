@@ -39,7 +39,7 @@ def main(args, logger):
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
     loss = nn.CrossEntropyLoss(reduction='none', weight=torch.cuda.FloatTensor([ 0.52253459,  0.32881212,  0.21796315,  4.80125623,  0.17421399,
         0.72840862,  0.49121524, 38.32179265,  2.9741392 ,  1.59452964,
-        8.03125813, 10.51390011])) 
+        8.03125813, 10.51390011]), ignore_index=0) 
     loss.cuda()
     model.cuda()
     
