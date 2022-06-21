@@ -20,10 +20,10 @@ def main(args, logger):
         ],p=1),
         A.VerticalFlip(p=0.5),              
         A.RandomRotate90(p=0.5),
-        A.OneOf([
-            A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5),
-            A.GridDistortion(p=0.5),                 
-            ], p=0.8),
+        # A.OneOf([
+        #     A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5),
+        #     A.GridDistortion(p=0.5),                 
+        #     ], p=0.8),
         Resize(height=360, width=480)]
         )
     transform_test = A.Compose([
@@ -36,9 +36,11 @@ def main(args, logger):
     
     model = SegNet(args.num_classes)
     optimizer = torch.optim.SGD(params=model.parameters(), lr=args.learning_rate, momentum=args.momentum)
-    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
-    loss = nn.CrossEntropyLoss(reduction='none') 
-    
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
+    loss = nn.CrossEntropyLoss(reduction='none', weight=torch.cuda.FloatTensor([ 0.52253459,  0.32881212,  0.21796315,  4.80125623,  0.17421399,
+        0.72840862,  0.49121524, 38.32179265,  2.9741392 ,  1.59452964,
+        8.03125813, 10.51390011])) 
+    loss.cuda()
     model.cuda()
     
     trainer = Trainer(model=model, 
