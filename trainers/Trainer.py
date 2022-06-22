@@ -18,6 +18,8 @@ class Trainer():
         self.logger = logger
         self.start_epoch = 1
         self.best_mIoU = -1
+        self.best_cIoU = np.array([-1]*self.args.num_classes)
+
         if resume:
             self._resume_checkpoint(resume)
             with open("../../content/drive/MyDrive/ComputerVision/{}.json".format(args.name)) as f:
@@ -32,8 +34,10 @@ class Trainer():
             output = self.model(image)
             
             loss = self.loss(output, target)  # CELoss
-            probs = torch.exp(-loss)
-            loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
+            if np.max(self.best_cIoU > 0.5):
+                probs = torch.exp(-loss)
+                loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
+
             loss = loss.mean()
             self.optimizer.zero_grad()
             loss.backward()
@@ -67,7 +71,6 @@ class Trainer():
     def train(self):
         print("---start-training--")
         for epoch in range(self.start_epoch, self.args.num_epoch+1):
-            
             self._train_epoch(epoch)
             if (epoch % self.args.eval_freq == 0):
                 mIoU, c_IoU = self._valid_epoch(epoch)
