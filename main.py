@@ -37,9 +37,8 @@ def main(args, logger):
     model = SegNet(args.num_classes)
     optimizer = torch.optim.SGD(params=model.parameters(), lr=args.learning_rate, momentum=args.momentum)
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
-    loss = nn.CrossEntropyLoss(reduction='none', weight=torch.cuda.FloatTensor([ 0.52253459,  0.32881212,  0.21796315,  4.80125623,  0.17421399,
-        0.72840862,  0.49121524, 38.32179265,  2.9741392 ,  1.59452964,
-        8.03125813, 10.51390011]), ignore_index=0) 
+    loss = nn.CrossEntropyLoss(reduction='none', weight=torch.cuda.FloatTensor([0,  0.28457743, 0.17831436, 4.13987536, 0.14145816, 0.57983627,
+                                                                                0.39328795, 3.74674816, 2.5740319 , 1., 6.31815479, 8.99454291]), ignore_index=0) 
     loss.cuda()
     model.cuda()
     
