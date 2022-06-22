@@ -68,6 +68,7 @@ class Trainer():
         print("---start-training--")
         for epoch in range(self.start_epoch, self.args.num_epoch+1):
             
+            self._train_epoch(epoch)
             if (epoch % self.args.eval_freq == 0):
                 mIoU, c_IoU = self._valid_epoch(epoch)
                 
@@ -78,7 +79,6 @@ class Trainer():
                     self._save_checkpoint(epoch, save_best=True)
                 else:
                     self._save_checkpoint(epoch, save_best=False)
-            self._train_epoch(epoch)
             
             self.lr_scheduler.step()
     

@@ -102,12 +102,12 @@ class CamVid(Dataset):
     def _classEncode(self, target):
         output_shape = (target.shape[0], target.shape[1])
         output = np.zeros(output_shape)
-        for label in label_dict.keys(): 
-            for sub_label in label_dict[label]:
+        for label in self.label_dict.keys(): 
+            for sub_label in self.label_dict[label]:
                 channel = np.array(target == np.array([[sub_label]]), dtype=np.float32)
                 channel = np.logical_and(np.logical_and(channel[:, :, 0], channel[:, :, 1]), channel[:, :, 2])*label
                 output += channel
-    return output
+        return output
     
     def __len__(self):
         if self.mode=='train':
