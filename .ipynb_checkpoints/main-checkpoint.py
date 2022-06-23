@@ -11,7 +11,6 @@ from albumentations.augmentations.geometric.resize import Resize
 import random
 from comet_ml import Experiment
 import json
-from utils.schedulers import OneCycle
 
 def main(args, logger):
     transform_train = A.Compose([
@@ -37,10 +36,10 @@ def main(args, logger):
     
     model = SegNet(args.num_classes)
     optimizer = torch.optim.Adam(params=model.parameters(), lr=args.learning_rate, betas=(0.9, 0.999))
-    lr_scheduler = OneCycle(optimizer, num_epochs=args.num_epoch, iters_per_epoch=1)
-    # [0,  0.28457743, 0.17831436, 4.13987536, 0.14145816, 0.57983627, 0.39328795, 3.74674816, 2.5740319 , 1., 6.31815479, 8.99454291]
-    loss = nn.CrossEntropyLoss(reduction='none', weight=torch.cuda.FloatTensor([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), ignore_index=0) 
-
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
+    loss = nn.CrossEntropyLoss(reduction='none', weight=torch.cuda.FloatTensor([0,  0.28457743, 0.17831436, 4.13987536, 0.14145816, 0.57983627,
+                                                                                0.39328795, 3.74674816, 2.5740319 , 1., 6.31815479, 8.99454291]), ignore_index=0) 
+    
     loss.cuda()
     model.cuda()
     

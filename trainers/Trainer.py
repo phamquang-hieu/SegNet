@@ -19,6 +19,9 @@ class Trainer():
         self.start_epoch = 1
         self.best_mIoU = -1
         self.best_cIoU = np.array([-1]*self.args.num_classes)
+        self.cur_cIoU = np.array([-1]*self.args.num_classes)
+        self.focal_IoU_threshold = 0.5
+        self.focal_IoU_classes = 2
 
         if resume:
             self._resume_checkpoint(resume)
@@ -30,22 +33,24 @@ class Trainer():
     def _train_epoch(self, epoch):
         self.model.train()
         train_length = len(self.train_loader)
+        print("print", np.sum(self.cur_cIoU > self.focal_IoU_threshold), self.focal_IoU_classes)
         for i, (image, target) in enumerate(self.train_loader):
             output = self.model(image)
             
             loss = self.loss(output, target)  # CELoss
-            if np.max(self.best_cIoU > 0.5):
+            if np.sum(self.cur_cIoU > self.focal_IoU_threshold) > self.focal_IoU_classes:
                 probs = torch.exp(-loss)
                 loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
-
+              
             loss = loss.mean()
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-            
             self.logger.log_metric("training-loss", loss, epoch=epoch, step=(epoch-1)*train_length+i+1)
             print(f'[Epoch {epoch}/{self.args.num_epoch}] [Batch {(i+1)}/{len(self.train_loader)}] {loss}')
-            
+        
+
+        
     def _valid_epoch(self, epoch):
         self.model.eval()
         # class_IoU = torch.cuda.FloatTensor([0]*self.args.num_classes) # it will soon be a 1D tensor after addition
@@ -60,8 +65,10 @@ class Trainer():
             valid_len += num_samples_per_class
         print("num_instances_per_class", valid_len)
         class_IoU /= valid_len
-        epoch_mIoU = class_IoU.mean()
+        epoch_mIoU = class_IoU[1:].mean()
         print("epoch_mIoU", epoch_mIoU, epoch_mIoU.shape)
+        self.cur_cIoU = class_IoU
+        
         self.logger.log_metric("mIoU", epoch_mIoU, step=epoch)
         for idx, c in enumerate(class_IoU):
             self.logger.log_metric(f"class-{idx}-IoU", c, step=epoch)
@@ -81,7 +88,7 @@ class Trainer():
                     print("best cIoU", self.best_cIoU)
                     self._save_checkpoint(epoch, save_best=True)
                 else:
-                    self._save_checkpoint(epoch, save_best=False)
+                    self._save_checkpoint(epoch, save_best=False)   
             
             self.lr_scheduler.step()
     
@@ -126,16 +133,18 @@ class Trainer():
             'optimzer': self.optimizer.state_dict(),
             'lr_scheduler':self.lr_scheduler.state_dict(),
             'best_IoU': self.best_mIoU,
-            'best_cIoU':self.best_cIoU
+            'best_cIoU':self.best_cIoU,
+            'focal_IoU_threshold':self.focal_IoU_threshold,
+            'focal_IoU_classes': self.focal_IoU_classes,
         }
         if save_best:
-            save_path = f"{model_dir}/checkpoint-best.pth"
+            save_path = f"{model_dir}/{self.args.name}/checkpoint-best.pth"
         else:
-            save_path = f"{model_dir}/checkpoint.pth"
+            save_path = f"{model_dir}/{self.args.name}/checkpoint.pth"
         if self.args.drive_mounted:
             save_path = self.drive_path(save_path)
             model_dir = self.drive_path(model_dir)
-        os.makedirs(model_dir, exist_ok=True)
+        os.makedirs(os.path.join(model_dir, self.args.name), exist_ok=True)
         torch.save(state, save_path)
         
     def _resume_checkpoint(self, resume_path):
@@ -146,4 +155,7 @@ class Trainer():
         self.lr_scheduler.load_state_dict(state['lr_scheduler'])
         self.best_IoU = state['best_IoU']
         self.best_cIoU = state['best_cIoU']
+        self.focal_IoU_classes = state['focal_IoU_classes']
+        self.focal_IoU_threshold = state['focal_IoU_threshold']
+        
 
