@@ -38,9 +38,9 @@ class Trainer():
             output = self.model(image)
             
             loss = self.loss(output, target)  # CELoss
-            if np.sum(self.cur_cIoU > self.focal_IoU_threshold) > self.focal_IoU_classes:
-                probs = torch.exp(-loss)
-                loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
+            # if np.sum(self.cur_cIoU > self.focal_IoU_threshold) > self.focal_IoU_classes:
+            probs = torch.exp(-loss)
+            loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
               
             loss = loss.mean()
             self.optimizer.zero_grad()
