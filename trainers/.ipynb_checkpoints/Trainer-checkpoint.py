@@ -5,6 +5,7 @@ import json
 from comet_ml import ExistingExperiment
 import os
 import numpy as np
+import torch.nn as nn
 
 class Trainer():
     def __init__(self, model, optimizer, lr_scheduler, loss, args, resume:str, train_loader, valid_loader, logger=None):
@@ -37,10 +38,10 @@ class Trainer():
         for i, (image, target) in enumerate(self.train_loader):
             output = self.model(image)
             
-            loss = self.loss(output, target)  # CELoss
+            loss = self.loss(output.logits, target)  # CELoss
             # if np.sum(self.cur_cIoU > self.focal_IoU_threshold) > self.focal_IoU_classes:
-            probs = torch.exp(-loss)
-            loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
+            #     probs = torch.exp(-loss)
+            #     loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
               
             loss = loss.mean()
             self.optimizer.zero_grad()
@@ -58,8 +59,9 @@ class Trainer():
         valid_len = 0
         epoch_mIoU = 0
         for i, (image, target) in enumerate(self.valid_loader):
-            output_valid = self.model(image)
-            
+            output_valid = self.model(image).logits
+            # print(output_valid.logits.shape)
+            output_valid = nn.Softmax(dim=1)(output_valid)
             batch_class_IoU, num_samples_per_class = self._eval_metrics(output_valid, target)
             class_IoU += batch_class_IoU
             valid_len += num_samples_per_class
@@ -78,6 +80,7 @@ class Trainer():
     def train(self):
         print("---start-training--")
         for epoch in range(self.start_epoch, self.args.num_epoch+1):
+            
             self._train_epoch(epoch)
             if (epoch % self.args.eval_freq == 0):
                 mIoU, c_IoU = self._valid_epoch(epoch)
@@ -89,7 +92,6 @@ class Trainer():
                     self._save_checkpoint(epoch, save_best=True)
                 else:
                     self._save_checkpoint(epoch, save_best=False)   
-            
             self.lr_scheduler.step()
     
     def _eval_metrics(self, output:torch.cuda.FloatTensor, target:torch.cuda.FloatTensor):

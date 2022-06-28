@@ -12,8 +12,10 @@ import random
 from comet_ml import Experiment
 import json
 from utils.schedulers import OneCycle
-from transformers import SegFormerForSemanticSegmentation
+from transformers import SegformerForSemanticSegmentation
 from huggingface_hub import cached_download, hf_hub_url
+from comet_ml import ExistingExperiment
+
 
 def main(args, logger):
     transform_train = A.Compose([
@@ -39,9 +41,9 @@ def main(args, logger):
     
     # model = SegNet(args.num_classes)
     model = model = SegformerForSemanticSegmentation.from_pretrained("nvidia/mit-b0",
-                                                         num_labels=150)
+                                                         num_labels=args.num_classes)
     optimizer = torch.optim.Adam(params=model.parameters(), lr=args.learning_rate, betas=(0.9, 0.999))
-    lr_scheduler = OneCycle(optimizer, num_epochs=args.num_epoch, iters_per_epoch=1)
+    lr_scheduler = OneCycle(optimizer, num_epochs=args.num_epoch, iters_per_epoch=1, phase1=15/args.num_epoch)
     # [0,  0.28457743, 0.17831436, 4.13987536, 0.14145816, 0.57983627, 0.39328795, 3.74674816, 2.5740319 , 1., 6.31815479, 8.99454291]
     # [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     loss = nn.CrossEntropyLoss(reduction='none', weight=torch.cuda.FloatTensor([0,  0.28457743, 0.17831436, 4.13987536, 0.14145816, 0.57983627, 0.39328795, 3.74674816, 2.5740319 , 1., 6.31815479, 8.99454291]), ignore_index=0) 
@@ -77,13 +79,19 @@ if __name__ == '__main__':
     parser.add_argument('-gm', '--gamma', type=float, default=2, help='eponential part of focal loss')
     args = parser.parse_args()
     
-    # Create an experiment with your api key
-    logger = Experiment(
-        api_key="zZTzevPBE5M14bjosVgWeyg3u",
-        project_name="semanticsegmentation",
-        workspace="phamquang-hieu",
-    )
-    logger.set_name(args.name)
-    with open("/content/drive/MyDrive/ComputerVision/{}.json".format(args.name), "w") as f:
-        json.dump(logger.get_key(), f)
+    if args.resume:
+        with open("../../content/drive/MyDrive/ComputerVision/{}.json".format(args.name)) as f:
+            EXPERIMENT_KEY = json.load(f)
+            logger = ExistingExperiment(api_key="zZTzevPBE5M14bjosVgWeyg3u",
+                                                            previous_experiment=EXPERIMENT_KEY)
+    else:
+        # Create an experiment with your api key
+        logger = Experiment(
+            api_key="zZTzevPBE5M14bjosVgWeyg3u",
+            project_name="semanticsegmentation",
+            workspace="phamquang-hieu",
+        )
+        logger.set_name(args.name)
+        with open("/content/drive/MyDrive/ComputerVision/{}.json".format(args.name), "w") as f:
+            json.dump(logger.get_key(), f)
     main(args, logger)
