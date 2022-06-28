@@ -43,9 +43,9 @@ class Trainer():
                     output = interpolate(output, size=(target.shape[1], target.shape[2]), mode='bilinear', align_corners=True)
             
             loss = self.loss(output, target)  # CELoss
-            if np.sum(self.cur_cIoU > self.focal_IoU_threshold) > self.focal_IoU_classes:
-                probs = torch.exp(-loss)
-                loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
+            # if np.sum(self.cur_cIoU > self.focal_IoU_threshold) > self.focal_IoU_classes:
+            #     probs = torch.exp(-loss)
+            #     loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
               
             loss = loss.mean()
             self.optimizer.zero_grad()
@@ -62,6 +62,7 @@ class Trainer():
         class_IoU = 0
         valid_len = 0
         epoch_mIoU = 0
+        num_valid_instances = len(self.valid_loader)
         for i, (image, target) in enumerate(self.valid_loader):
             if isinstance(self.model, SegformerForSemanticSegmentation):
                 output_valid = self.model(image).logits
@@ -69,7 +70,8 @@ class Trainer():
                 output_valid = self.model(image)
             if output_valid.shape[2: 4] != target.shape[1:3]:
                 output_valid = interpolate(output_valid, size=(target.shape[1], target.shape[2]), mode='bilinear', align_corners=True) 
-            
+            with torch.no_grad():
+                self.logger.log_metric("valid_loss", self.loss(output_valid, target).mean(), step=(epoch-1)*num_valid_instances+i+1, epoch=epoch)
             batch_class_IoU, num_samples_per_class = self._eval_metrics(output_valid, target)
             class_IoU += batch_class_IoU
             valid_len += num_samples_per_class

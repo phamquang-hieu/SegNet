@@ -16,21 +16,27 @@ from transformers import SegformerForSemanticSegmentation
 from huggingface_hub import cached_download, hf_hub_url
 from comet_ml import ExistingExperiment
 from torch.optim.lr_scheduler import ExponentialLR
+import json
 
 def main(args, logger):
     transform_train = A.Compose([
-        A.OneOf([
-            A.RandomCrop(height=576, width=768, p=0.5),
-            A.PadIfNeeded(min_height=720, min_width=960, p=0.5)
-        ],p=1),
-        A.VerticalFlip(p=0.5),              
-        A.RandomRotate90(p=0.5),
-        A.OneOf([
-            A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5),
-            A.GridDistortion(p=0.5),                 
-            ], p=0.8),
-        Resize(height=360, width=480)]
-        )
+                                  A.OneOf([
+                                      A.RandomSizedCrop(min_max_height=(576, 684), height=720, width=960, p=0.5),
+                                      A.PadIfNeeded(min_height=720, min_width=960, p=0.5)
+                                  ], p=1),    
+                                  A.VerticalFlip(p=0.5),              
+                                  A.RandomRotate90(p=0.5),
+                                  A.OneOf([
+                                      A.ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03, p=0.5),
+                                      A.GridDistortion(p=0.5),
+                                      A.OpticalDistortion(distort_limit=2, shift_limit=0.5, p=1)                  
+                                      ], p=0.8),
+                                  A.CLAHE(p=0.8),
+                                  A.RandomBrightnessContrast(p=0.8),    
+                                  A.RandomGamma(p=0.8),
+                                  Resize(height=360, width=480)
+                                ]
+                                )
     transform_test = A.Compose([
         Resize(height=360, width=480)
     ])
@@ -39,10 +45,17 @@ def main(args, logger):
     valid_loader = DataLoader(CamVid(mode='valid', transform=transform_test), batch_size=args.batch_size, shuffle=False)
     test_loader = DataLoader(CamVid(mode='test', transform=transform_test), batch_size=args.batch_size, shuffle=False)
     
+    with open("/content/SegNet/datasets/CamVid/id2label.json") as f:
+        id2label = json.load(f)
+    label2id = {v: k for k, v in id2label.items()}
     # model = SegNet(args.num_classes)
-    model = model = SegformerForSemanticSegmentation.from_pretrained("nvidia/mit-b5",
-                                                         num_labels=args.num_classes)
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=args.learning_rate, betas=(0.9, 0.999))
+    model = SegformerForSemanticSegmentation.from_pretrained("nvidia/mit-b0",
+                                                         num_labels=args.num_classes,
+                                                         id2label=id2label,
+                                                         label2id=label2id)
+    # optimizer = torch.optim.Adam(params=model.parameters(), lr=args.learning_rate, betas=(0.9, 0.999))
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.00006)
+
     # lr_scheduler = OneCycle(optimizer, num_epochs=args.num_epoch, iters_per_epoch=1, phase1=15/args.num_epoch)
     lr_scheduler = ExponentialLR(optimizer, gamma=1)
     # [0,  0.28457743, 0.17831436, 4.13987536, 0.14145816, 0.57983627, 0.39328795, 3.74674816, 2.5740319 , 1., 6.31815479, 8.99454291]
