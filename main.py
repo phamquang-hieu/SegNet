@@ -1,5 +1,6 @@
 from trainers.Trainer import Trainer
 from networks.segnet import SegNet
+from networks import UnetDecoder
 from datasets.CamVid import CamVid
 from torch.utils.data import DataLoader
 import argparse
@@ -54,6 +55,7 @@ def main(args, logger):
                                                          id2label=id2label,
                                                          label2id=label2id)
     # optimizer = torch.optim.Adam(params=model.parameters(), lr=args.learning_rate, betas=(0.9, 0.999))
+    model.decode_head = UnetDecoder(num_labels=args.num_classes)
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.00006)
 
     # lr_scheduler = OneCycle(optimizer, num_epochs=args.num_epoch, iters_per_epoch=1, phase1=15/args.num_epoch)

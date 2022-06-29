@@ -25,7 +25,7 @@ class OverlapPatchMerging(nn.Sequential):
             LayerNorm2d(out_channels)
         )
 
-        class EfficientMultiHeadAttention(nn.Module):
+class EfficientMultiHeadAttention(nn.Module):
     def __init__(self, channels: int, reduction_ratio: int = 1, num_heads: int = 8):
         super().__init__()
         self.reducer = nn.Sequential(

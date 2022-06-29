@@ -35,7 +35,18 @@ class UnetDecoder(nn.Module):
                                      for i in range(len(self.hidden_sizes)-1)]
                                     )
         self.classifier = nn.Conv2d(self.hidden_sizes[-1], n_classes, kernel_size=1, stride=1, padding=0)
-
+        self._weight_init()
+    
+    def _weight_init(self):
+        for module in self.modules:
+            if isinstance(module, nn.Conv2d):
+                    nn.init.kaiming_normal_(module.weight)
+                    if module.bias is not None:
+                        module.bias.data.zero_()
+                elif isinstance(module, nn.BatchNorm2d):
+                    module.weight.data.fill_(1)
+                    module.bias.data.zero_()
+    
     def forward(self, encoder_features):
         encoder_features = encoder_features[::-1]
         x = self.blocks[0](encoder_features[0])
