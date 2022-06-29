@@ -25,26 +25,6 @@ class VGGBlock(nn.Module):
 
         return out
 
-def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
-    return no_grad_trunc_normal_(tensor, mean, std, a, b)
-
-
-def init_weights(m: nn.Module) -> None:
-    if isinstance(m, nn.Linear):
-        trunc_normal_(m.weight, std=.02)
-        if m.bias is not None:
-            nn.init.zeros_(m.bias)
-    elif isinstance(m, nn.Conv2d):
-        fan_out = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-        fan_out //= m.groups
-        m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
-        if m.bias is not None:
-            nn.init.zeros_(m.bias)
-    elif isinstance(m, (nn.LayerNorm, nn.BatchNorm2d)):
-        nn.init.ones_(m.weight)
-        nn.init.zeros_(m.bias)
-
-    
 class UnetDecoder(nn.Module):
     def __init__(self, encoder_hidden_sizes, n_classes=12):
         super().__init__()
@@ -52,9 +32,18 @@ class UnetDecoder(nn.Module):
         self.hidden_sizes = [0] + encoder_hidden_sizes[::-1]
         self.blocks = nn.ModuleList([VGGBlock(self.hidden_sizes[i]+self.hidden_sizes[i+1], self.hidden_sizes[i+1]) for i in range(len(self.hidden_sizes)-1)])
         self.classifier = nn.Conv2d(self.hidden_sizes[-1], n_classes, kernel_size=1, stride=1, padding=0)
-        self._weight_init()
-            
-    def _weight_init(self):
+        self._kaiming_init()
+    def _xavier_init(self):
+        for module in self.modules():
+            if isinstance(module, nn.Conv2d):
+                nn.init.xavier_uniform(module.weight) 
+                if module.bias is not None:
+                    module.bias.data.zero_()       
+            elif isinstance(module, nn.BatchNorm2d):
+                module.weight.data.fill_(1)
+                module.bias.data.zero_()
+
+    def _kaiming_init(self):
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
                 nn.init.kaiming_normal_(module.weight)
