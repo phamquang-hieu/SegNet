@@ -25,6 +25,26 @@ class VGGBlock(nn.Module):
 
         return out
 
+def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
+    return no_grad_trunc_normal_(tensor, mean, std, a, b)
+
+
+def init_weights(m: nn.Module) -> None:
+    if isinstance(m, nn.Linear):
+        trunc_normal_(m.weight, std=.02)
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+    elif isinstance(m, nn.Conv2d):
+        fan_out = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+        fan_out //= m.groups
+        m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+    elif isinstance(m, (nn.LayerNorm, nn.BatchNorm2d)):
+        nn.init.ones_(m.weight)
+        nn.init.zeros_(m.bias)
+
+    
 class UnetDecoder(nn.Module):
     def __init__(self, encoder_hidden_sizes, n_classes=12):
         super().__init__()

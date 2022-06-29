@@ -63,7 +63,7 @@ def main(args, logger):
     lr_scheduler = ExponentialLR(optimizer, gamma=1)
     # [0,  0.28457743, 0.17831436, 4.13987536, 0.14145816, 0.57983627, 0.39328795, 3.74674816, 2.5740319 , 1., 6.31815479, 8.99454291]
     # [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    loss = nn.CrossEntropyLoss(reduction='none', weight=torch.cuda.FloatTensor([0,  0.28457743, 0.17831436, 4.13987536, 0.14145816, 0.57983627, 0.39328795, 3.74674816, 2.5740319 , 1., 6.31815479, 8.99454291]), ignore_index=0) 
+    loss = nn.CrossEntropyLoss(reduction='none', weight=torch.cuda.FloatTensor([1.31999035, 0.22905115, 0.14352195, 3.33210966, 0.11385707, 0.46669956, 0.31655025, 3.01568879, 2.07179101, 0.80488164, 5.08536677, 7.23954242]), ignore_index=0) 
 
     loss.cuda()
     model.cuda()
