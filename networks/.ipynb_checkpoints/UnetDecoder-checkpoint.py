@@ -1,15 +1,16 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from torch.nn.utils import spectral_norm
 
 class VGGBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.relu = nn.ReLU(inplace=True)
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.conv1 = spectral_norm(nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1))
         # self.bn1 = nn.GroupNorm(4, middle_channels, affine=True)
         self.bn1 = nn.BatchNorm2d(out_channels, affine=True)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.conv2 = spectral_norm(nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1))
         # self.bn2 = nn.GroupNorm(4, out_channels, affine=True)
         self.bn2 = nn.BatchNorm2d(out_channels, affine=True)
 
@@ -31,12 +32,12 @@ class UnetDecoder(nn.Module):
         self.up_sample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         self.hidden_sizes = [0] + encoder_hidden_sizes[::-1]
         self.blocks = nn.ModuleList([VGGBlock(self.hidden_sizes[i]+self.hidden_sizes[i+1], self.hidden_sizes[i+1]) for i in range(len(self.hidden_sizes)-1)])
-        self.classifier = nn.Conv2d(self.hidden_sizes[-1], n_classes, kernel_size=1, stride=1, padding=0)
-        self._kaiming_init()
+        self.classifier = spectral_norm(nn.Conv2d(self.hidden_sizes[-1], n_classes, kernel_size=1, stride=1, padding=0))
+        self._xavier_init()
     def _xavier_init(self):
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
-                nn.init.xavier_uniform(module.weight) 
+                nn.init.xavier_uniform_(module.weight) 
                 if module.bias is not None:
                     module.bias.data.zero_()       
             elif isinstance(module, nn.BatchNorm2d):
