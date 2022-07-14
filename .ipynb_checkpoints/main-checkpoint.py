@@ -1,6 +1,6 @@
 from trainers.Trainer import Trainer
 from networks.segnet import SegNet
-from networks.UnetDecoder import UnetDecoder
+from networks.DeconvUnetDecoder import UnetDecoder
 from datasets.CamVid import CamVid
 from torch.utils.data import DataLoader
 import argparse
@@ -18,6 +18,7 @@ from huggingface_hub import cached_download, hf_hub_url
 from comet_ml import ExistingExperiment
 from torch.optim.lr_scheduler import ExponentialLR
 import json
+from utils.TverskyLoss import TverskyLoss
 
 def main(args, logger):
     transform_train = A.Compose([
