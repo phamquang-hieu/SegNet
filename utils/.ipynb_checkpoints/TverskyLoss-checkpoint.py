@@ -46,13 +46,14 @@ class TverskyLoss(nn.Module):
         [1]: https://arxiv.org/abs/1706.05721
     """
 
-    def __init__(self, alpha: float, beta: float, weight: list=None, ignore_index=None) -> None:
+    def __init__(self, alpha: float, beta: float, weight: list=None, ignore_index=None, reduction='none') -> None:
         super(TverskyLoss, self).__init__()
         self.alpha: float = alpha
         self.beta: float = beta
         self.eps: float = 1e-6
         self.weight = None
         self.ignore_index = ignore_index
+        self.reduction = reduction
         if weight is not None:
             self.weight = torch.Tensor(weight)
 
@@ -96,8 +97,10 @@ class TverskyLoss(nn.Module):
             tversky_loss = tversky_loss * self.weight.type(tversky_loss.dtype).to(tversky_loss.device)
         # print(tversky_loss)
         # print(tversky_loss.shape) [1, #classes]
-
-        return torch.mean(1. - tversky_loss)
+        if self.reduction == 'none':
+            return 1. - tversky_loss
+        if self.reduction == 'mean':
+            return torch.mean(1. - tversky_loss)
 
     ######################
     # functional interface
