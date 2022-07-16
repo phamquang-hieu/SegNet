@@ -46,7 +46,9 @@ class Trainer():
             # if np.sum(self.cur_cIoU > self.focal_IoU_threshold) > self.focal_IoU_classes:
             #     probs = torch.exp(-loss)
             #     loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
-              
+            if epoch > 5: 
+                loss = loss.pow(self.args.gamma)
+            
             loss = loss.mean()
             self.optimizer.zero_grad()
             loss.backward()
@@ -161,7 +163,7 @@ class Trainer():
         
     def _resume_checkpoint(self, resume_path):
         state = torch.load(resume_path)
-        self.start_epoch = state['epoch']
+        self.start_epoch = state['epoch']+1
         self.model.load_state_dict(state['model'])
         self.optimizer.load_state_dict(state['optimzer'])
         self.lr_scheduler.load_state_dict(state['lr_scheduler'])
@@ -170,4 +172,3 @@ class Trainer():
         self.focal_IoU_classes = state['focal_IoU_classes']
         self.focal_IoU_threshold = state['focal_IoU_threshold']
         
-
