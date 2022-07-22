@@ -4,11 +4,12 @@ import torch.nn.functional as F
 from torchvision import models
 from copy import deepcopy
 from torch.nn.utils import spectral_norm
+from torchvision.models import VGG16_BN_Weights 
 
 class SegNet(nn.Module):
     def __init__(self, num_classes, in_channels=3, pretrained=True):
         super(SegNet, self).__init__()
-        vgg_bn = models.vgg16_bn(pretrained=True)
+        vgg_bn = models.vgg16_bn(weights=VGG16_BN_Weights.DEFAULT)
         encoder = list(vgg_bn.features.children())
         '''
         # VGG16
@@ -65,8 +66,11 @@ class SegNet(nn.Module):
         self.encoder_stages = []
         i = 0
         current_stage = []
-        while i < len(encoder):        
-            current_stage.append(encoder[i])
+        while i < len(encoder):
+            if isinstance(encoder[i], nn.Conv2d)
+                current_stage.append(spectral_norm(encoder[i]))
+            else:
+                current_stage.append(encoder[i])
             i+=1
             if isinstance(encoder[i], nn.MaxPool2d):
                 i += 1

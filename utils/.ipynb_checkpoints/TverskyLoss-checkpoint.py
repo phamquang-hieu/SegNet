@@ -82,7 +82,7 @@ class TverskyLoss(nn.Module):
         target_one_hot = F.one_hot(target, num_classes=input.shape[1]).permute(0, 3, 1, 2).type(input.dtype).to(input.device)
 
         # compute the actual dice score
-        dims = (2, 3)
+        dims = (2, 3) # left the 1 dimension for later FocalLoss
         intersection = torch.sum(input_soft * target_one_hot, dims)
         fps = torch.sum(input_soft * (1. - target_one_hot), dims)
         fns = torch.sum((1. - input_soft) * target_one_hot, dims)
@@ -90,7 +90,7 @@ class TverskyLoss(nn.Module):
         numerator = intersection
         denominator = intersection + self.alpha * fps + self.beta * fns
         tversky_loss = numerator / (denominator + self.eps)
-        # print(tversky_loss)
+
         if self.weight is not None:
             if self.ignore_index is not None:
                 self.weight[self.ignore_index] = 0.00
@@ -111,8 +111,5 @@ class TverskyLoss(nn.Module):
         target: torch.Tensor,
         alpha: float,
         beta: float) -> torch.Tensor:
-        r"""Function that computes Tversky loss.
-
-        See :class:`~torchgeometry.losses.TverskyLoss` for details.
-        """
+        
         return TverskyLoss(alpha, beta)(input, target)
