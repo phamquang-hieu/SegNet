@@ -1,4 +1,4 @@
-from comet_ml import Experiment
+# from comet_ml import Experiment
 from trainers.Trainer import Trainer
 from networks.segnet import SegNet
 from networks.DeconvUnetDecoder import UnetDecoder
