@@ -15,7 +15,7 @@ import json
 from utils.schedulers import OneCycle
 from transformers import SegformerForSemanticSegmentation
 from huggingface_hub import cached_download, hf_hub_url
-from comet_ml import ExistingExperiment
+# from comet_ml import ExistingExperiment
 from torch.optim.lr_scheduler import ExponentialLR
 import json
 from utils.TverskyLoss import TverskyLoss
