@@ -22,8 +22,6 @@ class Trainer():
         self.best_mIoU = -1
         self.best_cIoU = np.array([-1]*self.args.num_classes)
         self.cur_cIoU = np.array([-1]*self.args.num_classes)
-        self.focal_IoU_threshold = 0.5
-        self.focal_IoU_classes = 2
 
         if resume:
             self._resume_checkpoint(resume)
@@ -32,7 +30,7 @@ class Trainer():
     def _train_epoch(self, epoch):
         self.model.train()
         train_length = len(self.train_loader)
-        print("print", np.sum(self.cur_cIoU > self.focal_IoU_threshold), self.focal_IoU_classes)
+
         for i, (image, target) in enumerate(self.train_loader):
             if isinstance(self.model, SegformerForSemanticSegmentation):
                 output = self.model(image).logits
@@ -43,25 +41,28 @@ class Trainer():
                 if output.shape[2: 4] != target.shape[1:3]:
                     output = interpolate(output, size=(target.shape[1], target.shape[2]), mode='bilinear', align_corners=True)
             
-            loss = self.loss(output, target) 
-            # if np.sum(self.cur_cIoU > self.focal_IoU_threshold) > self.focal_IoU_classes:
-            #     probs = torch.exp(-loss)
-            #     loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
-            if epoch > 10 and isinstance(self.loss, TverskyLoss): 
-                loss = loss.pow(self.args.gamma)
-            
             if self.args.loss == 'combined':
                 loss = self.loss[0](output, target).mean()
                 loss_1 = self.loss[1](output, target)
-                if isinstance(self.loss[1], TverskyLoss) and epoch > 10:
+                if isinstance(self.loss[1], TverskyLoss) and epoch > 1:
                     loss_1 = loss_1.pow(self.args.gamma)
-                loss += loss_1
+                loss += loss_1.mean()
+            else:
+                loss = self.loss(output, target) 
+
+            # if np.sum(self.cur_cIoU > self.focal_IoU_threshold) > self.focal_IoU_classes:
+            #     probs = torch.exp(-loss)
+            #     loss *= self.args.a_focal*(1-probs).pow(self.args.gamma)
+            
+            if epoch > 10 and isinstance(self.loss, TverskyLoss): 
+                loss = loss.pow(self.args.gamma)
             
             loss = loss.mean()
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-            self.logger.log_metric("training-loss", loss, epoch=epoch, step=(epoch-1)*train_length+i+1)
+            # self.logger.log_metric("training-loss", loss, epoch=epoch, step=(epoch-1)*train_length+i+1)
+
             print(f'[Epoch {epoch}/{self.args.num_epoch}] [Batch {(i+1)}/{len(self.train_loader)}] {loss}')
         
 
@@ -80,8 +81,10 @@ class Trainer():
                 output_valid = self.model(image)
             if output_valid.shape[2: 4] != target.shape[1:3]:
                 output_valid = interpolate(output_valid, size=(target.shape[1], target.shape[2]), mode='bilinear', align_corners=True) 
-            with torch.no_grad():
-                self.logger.log_metric("valid_loss", self.loss(output_valid, target).mean(), step=(epoch-1)*num_valid_instances+i+1, epoch=epoch)
+            
+            # with torch.no_grad():
+            #     self.logger.log_metric("valid_loss", self.loss(output_valid, target).mean(), step=(epoch-1)*num_valid_instances+i+1, epoch=epoch)
+            
             batch_class_IoU, num_samples_per_class = self._eval_metrics(output_valid, target)
             class_IoU += batch_class_IoU
             valid_len += num_samples_per_class
@@ -91,9 +94,9 @@ class Trainer():
         print("epoch_mIoU", epoch_mIoU, epoch_mIoU.shape)
         self.cur_cIoU = class_IoU
         
-        self.logger.log_metric("mIoU", epoch_mIoU, step=epoch)
-        for idx, c in enumerate(class_IoU):
-            self.logger.log_metric(f"class-{idx}-IoU", c, step=epoch)
+        # self.logger.log_metric("mIoU", epoch_mIoU, step=epoch)
+        # for idx, c in enumerate(class_IoU):
+        #     self.logger.log_metric(f"class-{idx}-IoU", c, step=epoch)
 
         return epoch_mIoU, class_IoU
         
@@ -141,9 +144,6 @@ class Trainer():
         class_IoU = class_IoU.sum(axis=1)
         return class_IoU, num_samples_per_class    
     
-    def infer(self):
-        pass
-    
     def drive_path(self, path):
         return os.path.join("../../content/drive/MyDrive/ComputerVision", path)
 
@@ -155,9 +155,7 @@ class Trainer():
             'optimzer': self.optimizer.state_dict(),
             'lr_scheduler':self.lr_scheduler.state_dict(),
             'best_IoU': self.best_mIoU,
-            'best_cIoU':self.best_cIoU,
-            'focal_IoU_threshold':self.focal_IoU_threshold,
-            'focal_IoU_classes': self.focal_IoU_classes,
+            'best_cIoU':self.best_cIoU
         }
         if save_best:
             save_path = f"{model_dir}/{self.args.name}/checkpoint-best.pth"
@@ -177,6 +175,5 @@ class Trainer():
         self.lr_scheduler.load_state_dict(state['lr_scheduler'])
         self.best_IoU = state['best_IoU']
         self.best_cIoU = state['best_cIoU']
-        self.focal_IoU_classes = state['focal_IoU_classes']
-        self.focal_IoU_threshold = state['focal_IoU_threshold']
+
         

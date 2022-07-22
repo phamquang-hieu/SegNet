@@ -112,19 +112,20 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--loss', type=str, default ='c_e', choices=['c_e', 't_v', 'combined'], help='cross entropy loss or focal loss or combined loss')
     args = parser.parse_args()
     
-    if args.resume:
-        with open("../../content/drive/MyDrive/ComputerVision/{}.json".format(args.name)) as f:
-            EXPERIMENT_KEY = json.load(f)
-            logger = ExistingExperiment(api_key="zZTzevPBE5M14bjosVgWeyg3u",
-                                                            previous_experiment=EXPERIMENT_KEY)
-    else:
-        # Create an experiment with your api key
-        logger = Experiment(
-            api_key="zZTzevPBE5M14bjosVgWeyg3u",
-            project_name="semanticsegmentation",
-            workspace="phamquang-hieu",
-        )
-        logger.set_name(args.name)
-        with open("/content/drive/MyDrive/ComputerVision/{}.json".format(args.name), "w") as f:
-            json.dump(logger.get_key(), f)
+    logger = None
+    # if args.resume:
+    #     with open("../../content/drive/MyDrive/ComputerVision/{}.json".format(args.name)) as f:
+    #         EXPERIMENT_KEY = json.load(f)
+    #         logger = ExistingExperiment(api_key="zZTzevPBE5M14bjosVgWeyg3u",
+    #                                                         previous_experiment=EXPERIMENT_KEY)
+    # else:
+    #     # Create an experiment with your api key
+    #     logger = Experiment(
+    #         api_key="zZTzevPBE5M14bjosVgWeyg3u",
+    #         project_name="semanticsegmentation",
+    #         workspace="phamquang-hieu",
+    #     )
+    #     logger.set_name(args.name)
+    #     with open("/content/drive/MyDrive/ComputerVision/{}.json".format(args.name), "w") as f:
+    #         json.dump(logger.get_key(), f)
     main(args, logger)

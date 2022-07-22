@@ -67,7 +67,7 @@ class SegNet(nn.Module):
         i = 0
         current_stage = []
         while i < len(encoder):
-            if isinstance(encoder[i], nn.Conv2d)
+            if isinstance(encoder[i], nn.Conv2d):
                 current_stage.append(spectral_norm(encoder[i]))
             else:
                 current_stage.append(encoder[i])
