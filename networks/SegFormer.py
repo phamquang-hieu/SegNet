@@ -1,3 +1,5 @@
+# refereces: https://github.com/FrancescoSaverioZuppichini/SegFormer/blob/main/README.ipynb
+
 import torch
 from einops import rearrange
 from torch import nn
@@ -198,8 +200,8 @@ class SegFormerEncoder(nn.Module):
 class SegFormerDecoderBlock(nn.Sequential):
     def __init__(self, in_channels: int, out_channels: int, scale_factor: int = 2):
         super().__init__(
-            nn.UpsamplingBilinear2d(scale_factor=scale_factor),
             nn.Conv2d(in_channels, out_channels, kernel_size=1),
+            nn.UpsamplingBilinear2d(scale_factor=scale_factor),
         )
 
 class SegFormerDecoder(nn.Module):
